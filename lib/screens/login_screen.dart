@@ -1,4 +1,3 @@
-// login_modal.dart
 import 'package:flutter/material.dart';
 import 'package:http/http.dart' as http;
 import 'dart:convert';
@@ -124,104 +123,111 @@ class _LoginModalState extends State<LoginModal> {
           color: Colors.transparent,
           child: Container(
             decoration: BoxDecoration(
-              color: Colors.white,
               borderRadius: BorderRadius.circular(20),
-              boxShadow: [
-                BoxShadow(
-                  color: Colors.black.withOpacity(0.2),
-                  blurRadius: 10,
-                  spreadRadius: 2,
-                ),
-              ],
+              gradient: LinearGradient(
+                colors: [
+                  Constants.naranjaOscuro,
+                  Constants.naranjaClaro,
+                ],
+                begin: Alignment.topLeft,
+                end: Alignment.bottomRight,
+              ),
             ),
-            padding: const EdgeInsets.all(25),
-            child: SingleChildScrollView(
-              child: Column(
-                mainAxisSize: MainAxisSize.min,
-                children: [
-                  Row(
-                    mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                    children: [
-                      Text(
-                        "Iniciar Sesión",
-                        style: TextStyle(
-                          fontSize: 24,
-                          fontWeight: FontWeight.bold,
-                          color: Constants.naranjaOscuro,
+            padding: const EdgeInsets.all(4), // Grosor del borde
+            child: Container(
+              decoration: BoxDecoration(
+                color: Colors.white,
+                borderRadius: BorderRadius.circular(16), // Reducido para que coincida con el borde
+              ),
+              padding: const EdgeInsets.all(25),
+              child: SingleChildScrollView(
+                child: Column(
+                  mainAxisSize: MainAxisSize.min,
+                  children: [
+                    Row(
+                      mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                      children: [
+                        Text(
+                          "Iniciar Sesión",
+                          style: TextStyle(
+                            fontSize: 24,
+                            fontWeight: FontWeight.bold,
+                            color: Constants.naranjaOscuro,
+                          ),
+                        ),
+                        IconButton(
+                          icon: Icon(Icons.close, color: Constants.naranjaOscuro),
+                          onPressed: widget.onClose,
+                        ),
+                      ],
+                    ),
+                    const SizedBox(height: 20),
+                    TextField(
+                      controller: _emailController,
+                      decoration: InputDecoration(
+                        labelText: "Email",
+                        prefixIcon: Icon(Icons.email, color: Constants.naranjaOscuro),
+                        border: OutlineInputBorder(
+                          borderRadius: BorderRadius.circular(10),
+                        ),
+                        focusedBorder: OutlineInputBorder(
+                          borderSide: BorderSide(color: Constants.naranjaOscuro),
+                          borderRadius: BorderRadius.circular(10),
                         ),
                       ),
-                      IconButton(
-                        icon: Icon(Icons.close, color: Constants.naranjaOscuro),
-                        onPressed: widget.onClose,
-                      ),
-                    ],
-                  ),
-                  const SizedBox(height: 20),
-                  TextField(
-                    controller: _emailController,
-                    decoration: InputDecoration(
-                      labelText: "Email",
-                      prefixIcon: Icon(Icons.email, color: Constants.naranjaOscuro),
-                      border: OutlineInputBorder(
-                        borderRadius: BorderRadius.circular(10),
-                      ),
-                      focusedBorder: OutlineInputBorder(
-                        borderSide: BorderSide(color: Constants.naranjaOscuro),
-                        borderRadius: BorderRadius.circular(10),
-                      ),
+                      keyboardType: TextInputType.emailAddress,
                     ),
-                    keyboardType: TextInputType.emailAddress,
-                  ),
-                  const SizedBox(height: 15),
-                  TextField(
-                    controller: _passwordController,
-                    decoration: InputDecoration(
-                      labelText: "Contraseña",
-                      prefixIcon: Icon(Icons.lock, color: Constants.naranjaOscuro),
-                      border: OutlineInputBorder(
-                        borderRadius: BorderRadius.circular(10),
+                    const SizedBox(height: 15),
+                    TextField(
+                      controller: _passwordController,
+                      decoration: InputDecoration(
+                        labelText: "Contraseña",
+                        prefixIcon: Icon(Icons.lock, color: Constants.naranjaOscuro),
+                        border: OutlineInputBorder(
+                          borderRadius: BorderRadius.circular(10),
+                        ),
+                        focusedBorder: OutlineInputBorder(
+                          borderSide: BorderSide(color: Constants.naranjaOscuro),
+                          borderRadius: BorderRadius.circular(10),
+                        ),
                       ),
-                      focusedBorder: OutlineInputBorder(
-                        borderSide: BorderSide(color: Constants.naranjaOscuro),
-                        borderRadius: BorderRadius.circular(10),
-                      ),
+                      obscureText: true,
                     ),
-                    obscureText: true,
-                  ),
-                  const SizedBox(height: 25),
-                  _isLoading
-                      ? const Center(child: CircularProgressIndicator())
-                      : SizedBox(
-                          width: double.infinity,
-                          child: ElevatedButton(
-                            onPressed: login,
-                            style: ElevatedButton.styleFrom(
-                              backgroundColor: Constants.naranjaOscuro,
-                              padding: const EdgeInsets.symmetric(vertical: 15),
-                              shape: RoundedRectangleBorder(
-                                borderRadius: BorderRadius.circular(10),
+                    const SizedBox(height: 25),
+                    _isLoading
+                        ? const Center(child: CircularProgressIndicator())
+                        : SizedBox(
+                            width: double.infinity,
+                            child: ElevatedButton(
+                              onPressed: login,
+                              style: ElevatedButton.styleFrom(
+                                backgroundColor: Constants.naranjaOscuro,
+                                padding: const EdgeInsets.symmetric(vertical: 15),
+                                shape: RoundedRectangleBorder(
+                                  borderRadius: BorderRadius.circular(10),
+                                ),
                               ),
-                            ),
-                            child: const Text(
-                              "Iniciar Sesión",
-                              style: TextStyle(
-                                fontSize: 16,
-                                color: Colors.white,
+                              child: const Text(
+                                "Iniciar Sesión",
+                                style: TextStyle(
+                                  fontSize: 16,
+                                  color: Colors.white,
+                                ),
                               ),
                             ),
                           ),
-                        ),
-                  const SizedBox(height: 15),
-                  TextButton(
-                    onPressed: () {
-                      // Aquí podrías agregar funcionalidad para recuperar contraseña
-                    },
-                    child: Text(
-                      "¿Olvidaste tu contraseña?",
-                      style: TextStyle(color: Constants.naranjaOscuro),
+                    const SizedBox(height: 15),
+                    TextButton(
+                      onPressed: () {
+                        // Aquí podrías agregar funcionalidad para recuperar contraseña
+                      },
+                      child: Text(
+                        "¿Olvidaste tu contraseña?",
+                        style: TextStyle(color: Constants.naranjaOscuro),
+                      ),
                     ),
-                  ),
-                ],
+                  ],
+                ),
               ),
             ),
           ),
