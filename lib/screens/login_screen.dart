@@ -21,7 +21,7 @@ class _LoginModalState extends State<LoginModal> {
   bool _isLoading = false;
 
   // Credenciales de administrador
-  static const String _adminEmail = "paola01@example.com";
+  static const String _adminEmail = "paola01@gmail.com";
   static const String _adminPassword = "El1234Escondite5656Animal42224235";
 
   Future<void> login() async {
