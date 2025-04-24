@@ -28,17 +28,17 @@ class _AdminPanelState extends State<AdminPanel> {
         {
           'title': 'Empleados',
           'icon': Icons.badge,
-          'screen': AdminEmpleados(token: widget.token)
+          'screen': AdminEmpleados(token: widget.token, isAdmin: true)
         },
         {
           'title': 'Proveedores',
           'icon': Icons.local_shipping,
-          'screen': AdminProveedores(token: widget.token)
+          'screen': AdminProveedores(token: widget.token, isAdmin: true)
         },
         {
           'title': 'Roles',
           'icon': Icons.admin_panel_settings,
-          'screen': AdminRoles(token: widget.token)
+          'screen': AdminRoles(token: widget.token, isAdmin: true)
         },
       ],
       'Productos': [

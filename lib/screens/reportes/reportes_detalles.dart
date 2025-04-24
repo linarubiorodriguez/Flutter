@@ -19,13 +19,25 @@ class ReportesDetalles extends StatefulWidget {
   _ReportesDetallesState createState() => _ReportesDetallesState();
 }
 
-class _ReportesDetallesState extends State<ReportesDetalles> {
+class _ReportesDetallesState extends State<ReportesDetalles> with SingleTickerProviderStateMixin {
+  late TabController _tabController;
   late int _currentTab;
 
   @override
   void initState() {
     super.initState();
     _currentTab = widget.currentTab;
+    _tabController = TabController(
+      initialIndex: _currentTab,
+      length: 3,
+      vsync: this,
+    );
+  }
+
+  @override
+  void dispose() {
+    _tabController.dispose();
+    super.dispose();
   }
 
   @override
@@ -43,32 +55,22 @@ class _ReportesDetallesState extends State<ReportesDetalles> {
             onPressed: () => setState(() {}),
           ),
         ],
+        bottom: TabBar(
+          controller: _tabController,
+          tabs: const [
+            Tab(text: 'Ventas'),
+            Tab(text: 'Productos'),
+            Tab(text: 'Usuarios'),
+          ],
+          onTap: (index) => setState(() => _currentTab = index),
+        ),
       ),
-      body: Column(
+      body: TabBarView(
+        controller: _tabController,
         children: [
-          TabBar(
-            tabs: const [
-              Tab(text: 'Ventas'),
-              Tab(text: 'Productos'),
-              Tab(text: 'Usuarios'),
-            ],
-            onTap: (index) => setState(() => _currentTab = index),
-            controller: TabController(
-              initialIndex: _currentTab,
-              length: 3,
-              vsync: ScaffoldState(),
-            ),
-          ),
-          Expanded(
-            child: IndexedStack(
-              index: _currentTab,
-              children: [
-                VentasReport(token: widget.token),
-                ProductosReport(token: widget.token),
-                UsuariosReport(token: widget.token),
-              ],
-            ),
-          ),
+          VentasReport(token: widget.token),
+          ProductosReport(token: widget.token),
+          UsuariosReport(token: widget.token),
         ],
       ),
     );

@@ -207,34 +207,45 @@ class _UsuariosReportState extends State<UsuariosReport> {
     );
   }
 
-  List<PieChartSectionData> _buildPieSections() {
-    final total = data['usuarios_por_rol']
-        .fold<double>(0, (sum, item) => sum + (item['value'] as num).toDouble());
+List<PieChartSectionData> _buildPieSections() {
+  // Convertir la lista dinámica a una lista tipada
+  final List<Map<String, dynamic>> roles = List<Map<String, dynamic>>.from(
+    data['usuarios_por_rol'] ?? []
+  );
+
+  final total = roles.fold<double>(0, (sum, item) {
+    final value = item['value'] is String 
+        ? double.tryParse(item['value']) ?? 0.0
+        : (item['value'] as num?)?.toDouble() ?? 0.0;
+    return sum + value;
+  });
+
+  return roles.asMap().entries.map((entry) {
+    final index = entry.key;
+    final item = entry.value;
+    final value = item['value'] is String 
+        ? double.tryParse(item['value']) ?? 0.0
+        : (item['value'] as num?)?.toDouble() ?? 0.0;
+    final percentage = total > 0 ? (value / total * 100).round() : 0;
     
-    return data['usuarios_por_rol'].asMap().entries.map((entry) {
-      final index = entry.key;
-      final item = entry.value;
-      final value = (item['value'] as num).toDouble();
-      final percentage = (value / total * 100).round();
-      
-      const colors = [
-        Color(0xFF0088FE),
-        Color(0xFF00C49F),
-        Color(0xFFFFBB28),
-        Color(0xFFFF8042),
-      ];
-      
-      return PieChartSectionData(
-        color: colors[index % colors.length],
-        value: value,
-        title: '$percentage%',
-        radius: 80,
-        titleStyle: const TextStyle(
-          fontSize: 14,
-          fontWeight: FontWeight.bold,
-          color: Colors.white,
-        ),
-      );
-    }).toList();
-  }
+    const colors = [
+      Color(0xFF0088FE),
+      Color(0xFF00C49F),
+      Color(0xFFFFBB28),
+      Color(0xFFFF8042),
+    ];
+    
+    return PieChartSectionData(
+      color: colors[index % colors.length],
+      value: value,
+      title: '$percentage%',
+      radius: 80,
+      titleStyle: const TextStyle(
+        fontSize: 14,
+        fontWeight: FontWeight.bold,
+        color: Colors.white,
+      ),
+    );
+  }).toList();
+}
 }

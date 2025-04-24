@@ -64,6 +64,9 @@ class _ProductosReportState extends State<ProductosReport> {
   }
 
   Widget _buildTopProductsChart() {
+    // Convertir la lista dinámica a una lista tipada
+    final List<Map<String, dynamic>> productos = List<Map<String, dynamic>>.from(data['top_productos'] ?? []);
+
     return Card(
       elevation: 4,
       child: Padding(
@@ -78,7 +81,7 @@ class _ProductosReportState extends State<ProductosReport> {
             const SizedBox(height: 10),
             SizedBox(
               height: 400,
-              child: data['top_productos'].isEmpty
+              child: productos.isEmpty
                   ? const Center(child: Text('No hay datos de productos vendidos'))
                   : BarChart(
                       BarChartData(
@@ -88,8 +91,9 @@ class _ProductosReportState extends State<ProductosReport> {
                           touchTooltipData: BarTouchTooltipData(
                             tooltipBgColor: Colors.blueGrey,
                             getTooltipItem: (group, groupIndex, rod, rodIndex) {
+                              final product = productos[group.x.toInt()];
                               return BarTooltipItem(
-                                '\$${(rod.toY).toStringAsFixed(2)}',
+                                '${product['nombre']}\n\$${rod.toY.toStringAsFixed(2)}',
                                 const TextStyle(color: Colors.white),
                               );
                             },
@@ -98,48 +102,46 @@ class _ProductosReportState extends State<ProductosReport> {
                         titlesData: FlTitlesData(
                           show: true,
                           leftTitles: AxisTitles(
-                            sideTitles: SideTitles(
-                              showTitles: true,
-                              getTitlesWidget: (value, meta) {
-                                final index = value.toInt();
-                                if (index >= 0 && index < data['top_productos'].length) {
-                                  return Padding(
-                                    padding: const EdgeInsets.only(right: 8),
-                                    child: Text(
-                                      data['top_productos'][index]['nombre'],
-                                      style: const TextStyle(fontSize: 12),
-                                      overflow: TextOverflow.ellipsis,
-                                    ),
-                                  );
-                                }
-                                return const Text('');
-                              },
-                              reservedSize: 100,
-                            ),
+                            sideTitles: SideTitles(showTitles: false),
                           ),
                           bottomTitles: AxisTitles(
                             sideTitles: SideTitles(
                               showTitles: true,
                               getTitlesWidget: (value, meta) {
-                                return Text(value.toStringAsFixed(0));
+                                final product = productos[value.toInt()];
+                                return SideTitleWidget(
+                                  axisSide: meta.axisSide,
+                                  child: Text(
+                                    product['nombre'],
+                                    style: const TextStyle(fontSize: 10),
+                                    maxLines: 2,
+                                    overflow: TextOverflow.ellipsis,
+                                  ),
+                                );
                               },
+                              reservedSize: 40,
                             ),
                           ),
                         ),
                         borderData: FlBorderData(show: false),
-                        barGroups: data['top_productos'].asMap().entries.map((entry) {
+                        barGroups: productos.asMap().entries.map((entry) {
                           final index = entry.key;
                           final product = entry.value;
+                          final ingresos = product['ingresos'] is String 
+                              ? double.tryParse(product['ingresos']) ?? 0.0
+                              : (product['ingresos'] as num?)?.toDouble() ?? 0.0;
+                          
                           return BarChartGroupData(
                             x: index,
                             barRods: [
                               BarChartRodData(
-                                toY: product['ingresos']?.toDouble() ?? 0,
+                                toY: ingresos,
                                 color: Colors.green,
                                 width: 20,
                                 borderRadius: BorderRadius.circular(4),
                               ),
                             ],
+                            showingTooltipIndicators: [0],
                           );
                         }).toList(),
                       ),
@@ -150,7 +152,6 @@ class _ProductosReportState extends State<ProductosReport> {
       ),
     );
   }
-
   Widget _buildLowStockTable() {
     return Card(
       elevation: 4,

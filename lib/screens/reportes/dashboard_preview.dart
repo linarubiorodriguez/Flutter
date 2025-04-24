@@ -18,7 +18,7 @@ class DashboardPreview extends StatefulWidget {
 
 class _DashboardPreviewState extends State<DashboardPreview> {
   Map<String, dynamic> data = {
-    'ventas': 0,
+    'ventas': 0.0,  // Cambiado a double para manejar decimales
     'productosTop': [],
     'usuarios': {'activos': 0, 'nuevos': 0}
   };
@@ -32,6 +32,7 @@ class _DashboardPreviewState extends State<DashboardPreview> {
 
   Future<void> _fetchData() async {
     try {
+      if (!mounted) return;
       setState(() => isLoading = true);
       
       final ventasRes = await http.get(
@@ -49,23 +50,88 @@ class _DashboardPreviewState extends State<DashboardPreview> {
         headers: {'Authorization': 'Bearer ${widget.token}'},
       );
 
+      if (!mounted) return;
+      
+      final List<dynamic> ventasData = jsonDecode(ventasRes.body);
+      final productosData = jsonDecode(productosRes.body);
+      final usuariosData = jsonDecode(usuariosRes.body);
+
+      // Calcular el total sumando todos los valores de venta
+      double totalVentas = 0.0;
+      for (var venta in ventasData) {
+        totalVentas += _parseDouble(venta['total']);
+      }
+
       setState(() {
         data = {
-          'ventas': jsonDecode(ventasRes.body)['total'] ?? 0,
-          'productosTop': jsonDecode(productosRes.body)['top_productos'] ?? [],
+          'ventas': totalVentas,
+          'productosTop': (productosData['top_productos'] as List?)?.cast<Map<String, dynamic>>() ?? [],
           'usuarios': {
-            'activos': jsonDecode(usuariosRes.body)['usuarios_activos'] ?? 0,
-            'nuevos': jsonDecode(usuariosRes.body)['nuevos_clientes'] ?? 0,
+            'activos': _safeParseInt(usuariosData['usuarios_activos']),
+            'nuevos': _safeParseInt(usuariosData['nuevos_clientes']),
           }
         };
         isLoading = false;
       });
-    } catch (e) {
+    } catch (e, stackTrace) {
+      print('Error completo: $e');
+      print('Stack trace: $stackTrace');
+      if (!mounted) return;
       setState(() => isLoading = false);
       ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(content: Text('Error al cargar datos: $e')),
+        SnackBar(content: Text('Error al cargar datos: ${e.toString()}')),
       );
     }
+  }
+  
+  int _safeParseInt(dynamic value) {
+    try {
+      if (value == null) return 0;
+      if (value is int) return value;
+      if (value is double) return value.toInt();
+      if (value is String) {
+        // Intenta parsear directamente
+        final parsed = int.tryParse(value);
+        if (parsed != null) return parsed;
+        
+        // Si falla, intenta eliminar caracteres no numéricos
+        final numericString = value.replaceAll(RegExp(r'[^0-9]'), '');
+        return int.tryParse(numericString) ?? 0;
+      }
+      return 0;
+    } catch (e) {
+      print('Error parsing int from $value: $e');
+      return 0;
+    }
+  }
+
+  double _parseDouble(dynamic value) {
+    try {
+      if (value == null) return 0.0;
+      if (value is double) return value;
+      if (value is int) return value.toDouble();
+      if (value is String) {
+        // Intenta parsear directamente
+        final parsed = double.tryParse(value);
+        if (parsed != null) return parsed;
+        
+        // Si falla, intenta eliminar caracteres no numéricos (excepto punto)
+        final numericString = value.replaceAll(RegExp(r'[^0-9.]'), '');
+        return double.tryParse(numericString) ?? 0.0;
+      }
+      return 0.0;
+    } catch (e) {
+      print('Error parsing double from $value: $e');
+      return 0.0;
+    }
+  }
+  // Método auxiliar para parsear ints
+  int _parseInt(dynamic value) {
+    if (value == null) return 0;
+    if (value is int) return value;
+    if (value is double) return value.toInt();
+    if (value is String) return int.tryParse(value) ?? 0;
+    return 0;
   }
 
   @override
@@ -103,6 +169,11 @@ class _DashboardPreviewState extends State<DashboardPreview> {
   }
 
   Widget _buildSalesCard() {
+    // Asegúrate de que siempre sea double
+    final sales = (data['ventas'] is int) 
+        ? (data['ventas'] as int).toDouble()
+        : (data['ventas'] as double? ?? 0.0);
+
     return Card(
       elevation: 4,
       child: Padding(
@@ -113,7 +184,7 @@ class _DashboardPreviewState extends State<DashboardPreview> {
             const Text('Ventas (7 días)', style: TextStyle(fontSize: 18)),
             const Spacer(),
             Text(
-              '\$${data['ventas'].toStringAsFixed(2)}',
+              '\$${sales.toStringAsFixed(2)}',
               style: const TextStyle(fontSize: 32, color: Colors.blue),
             ),
             const Spacer(),
@@ -131,6 +202,10 @@ class _DashboardPreviewState extends State<DashboardPreview> {
   }
 
   Widget _buildUsersCard() {
+    final usuarios = data['usuarios'] as Map<String, dynamic>;
+    final usuariosActivos = _safeParseInt(usuarios['activos']);
+    final nuevosClientes = _safeParseInt(usuarios['nuevos']);
+    
     return Card(
       elevation: 4,
       child: Padding(
@@ -141,11 +216,11 @@ class _DashboardPreviewState extends State<DashboardPreview> {
             const Text('Usuarios Activos', style: TextStyle(fontSize: 18)),
             const Spacer(),
             Text(
-              data['usuarios']['activos'].toString(),
+              usuariosActivos.toString(),
               style: const TextStyle(fontSize: 32, color: Colors.green),
             ),
             Text(
-              'Nuevos: ${data['usuarios']['nuevos']} (30 días)',
+              'Nuevos: $nuevosClientes (30 días)',
               style: const TextStyle(fontSize: 16),
             ),
             const Spacer(),
@@ -164,6 +239,10 @@ class _DashboardPreviewState extends State<DashboardPreview> {
   }
 
   Widget _buildProductsCard() {
+    // Convertir la lista dinámica a una lista tipada
+    final List<Map<String, dynamic>> productos = 
+        List<Map<String, dynamic>>.from(data['productosTop']);
+
     return Card(
       elevation: 4,
       child: Padding(
@@ -175,17 +254,19 @@ class _DashboardPreviewState extends State<DashboardPreview> {
             const SizedBox(height: 10),
             Expanded(
               child: ListView.builder(
-                itemCount: data['productosTop'].length,
+                itemCount: productos.length,
                 itemBuilder: (context, index) {
-                  final product = data['productosTop'][index];
+                  final product = productos[index];
+                  final ingresos = _parseDouble(product['ingresos']);
+                  
                   return Padding(
                     padding: const EdgeInsets.symmetric(vertical: 4),
                     child: Row(
                       mainAxisAlignment: MainAxisAlignment.spaceBetween,
                       children: [
-                        Text(product['nombre'] ?? ''),
+                        Text(product['nombre']?.toString() ?? ''),
                         Text(
-                          '\$${product['ingresos'].toStringAsFixed(2)}',
+                          '\$${ingresos.toStringAsFixed(2)}',
                           style: const TextStyle(fontWeight: FontWeight.bold),
                         ),
                       ],
