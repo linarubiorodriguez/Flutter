@@ -1,135 +1,211 @@
 import 'package:flutter/material.dart';
-import 'package:http/http.dart' as http;
+import 'dart:async';
 import 'dart:convert';
-
+import 'package:http/http.dart' as http;
+import 'package:shared_preferences/shared_preferences.dart';
 import 'sesion.dart';
+import 'constans.dart';
+import './screens/login_screen.dart';
+import 'principal.dart';
 
 class PerfilPage extends StatefulWidget {
+  const PerfilPage({super.key});
+
   @override
-  _PerfilPageState createState() => _PerfilPageState();
+  State<PerfilPage> createState() => _PerfilPageState();
 }
 
 class _PerfilPageState extends State<PerfilPage> {
-  String? nombres, apellidos, correo, telefono;
+  String nombres = "";
+  String apellidos = "";
+  String email = "";
+  String telefono = "";
+
+  int _currentImageIndex = 0;
+  late Timer _timer;
+
+  final List<String> _imagenes = [
+    "../assets/imagen/perro_perfil.png",
+    "../assets/imagen/gato_perfil.png",
+  ];
 
   @override
   void initState() {
     super.initState();
     obtenerDatosUsuario();
+
+    _timer = Timer.periodic(const Duration(seconds: 3), (timer) {
+      setState(() {
+        _currentImageIndex = (_currentImageIndex + 1) % _imagenes.length;
+      });
+    });
+  }
+
+  @override
+  void dispose() {
+    _timer.cancel();
+    super.dispose();
   }
 
   Future<void> obtenerDatosUsuario() async {
-    final id = Sesion.idUsuario;
-    final token = Sesion.token;
+    await Sesion.cargarSesion();
 
-    if (id == null || token == null) return;
+    if (Sesion.id == null || Sesion.token == null) {
+      print("No hay sesión activa");
+      return;
+    }
 
-    final url = Uri.parse('http://10.0.2.2:5000/Priv/$id'); // CAMBIADO
-
-    final respuesta = await http.get(
+    final url = Uri.parse('http://127.0.0.1:5000/Priv/${Sesion.id}');
+    final response = await http.get(
       url,
       headers: {
-        'Content-Type': 'application/json',
-        'Authorization': 'Bearer $token',
+        "Authorization": "Bearer ${Sesion.token}",
+        "Cache-Control": "no-cache",
       },
     );
 
-    if (respuesta.statusCode == 200) {
-      final data = json.decode(respuesta.body)['cliente'];
+    if (response.statusCode == 200) {
+      final data = jsonDecode(response.body);
+      final cliente = data["cliente"];
       setState(() {
-        nombres = data['nombres'];
-        apellidos = data['apellidos'];
-        correo = data['email'];
-        telefono = data['telefono'];
+        nombres = cliente["nombres"] ?? "";
+        apellidos = cliente["apellidos"] ?? "";
+        email = cliente["email"] ?? "";
+        telefono = cliente["telefono"] ?? "";
       });
     } else {
-      print("Error al obtener el perfil: ${respuesta.statusCode} ${respuesta.body}");
+      print("Error al obtener datos del usuario: ${response.statusCode}");
+    }
+  }
+
+  void cerrarSesion() async {
+    await Sesion.cerrar();
+    if (context.mounted) {
+      Navigator.pushAndRemoveUntil(
+        context,
+        MaterialPageRoute(builder: (_) => const LoginScreen()),
+        (route) => false,
+      );
     }
   }
 
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      appBar: AppBar(
-        title: const Text("Perfil", style: TextStyle(color: Colors.orange)),
-        actions: const [
-          Padding(
-            padding: EdgeInsets.all(10.0),
-            child: CircleAvatar(
-              backgroundColor: Colors.orange,
-              child: Icon(Icons.person, color: Colors.white),
-            ),
-          )
-        ],
-        backgroundColor: Colors.white,
-        elevation: 0,
-      ),
-      body: Center(
-        child: Container(
-          width: 300,
-          padding: const EdgeInsets.all(20),
-          decoration: BoxDecoration(
-            border: Border.all(),
-            borderRadius: BorderRadius.circular(15),
-            color: Colors.white,
-          ),
-          child: Column(
-            mainAxisSize: MainAxisSize.min,
+      backgroundColor: Colors.white,
+      body: Column(
+        children: [
+          const SizedBox(height: 40),
+
+          // Flecha de volver
+          Row(
             children: [
-              const Icon(Icons.image, size: 100, color: Colors.orange),
-              const SizedBox(height: 20),
-              InfoTexto(label: "Nombres", valor: nombres),
-              InfoTexto(label: "Apellidos", valor: apellidos),
-              InfoTexto(label: "Correo", valor: correo),
-              InfoTexto(label: "Telefono", valor: telefono),
-              const SizedBox(height: 20),
-              ElevatedButton(
+              IconButton(
+                icon: const Icon(Icons.arrow_back, color: Constants.naranjaOscuro),
                 onPressed: () {
-                  Sesion.cerrarSesion();
-                  Navigator.pushReplacementNamed(context, "/login");
+                  Navigator.pushReplacement(
+                    context,
+                    MaterialPageRoute(builder: (_) => const PrincipalPage()),
+                  );
                 },
-                style: ElevatedButton.styleFrom(
-                  backgroundColor: Colors.orange,
-                  shadowColor: Colors.black45,
-                  elevation: 6,
-                  shape: RoundedRectangleBorder(
-                    borderRadius: BorderRadius.circular(20),
-                  ),
+              ),
+              const Text(
+                "Volver",
+                style: TextStyle(
+                  color: Constants.naranjaOscuro,
+                  fontSize: 16,
                 ),
-                child: const Text(
-                  "Cerrar sesión",
-                  style: TextStyle(fontSize: 18, color: Colors.white),
+              )
+            ],
+          ),
+
+          const SizedBox(height: 10),
+
+          // Título con ícono
+          Row(
+            mainAxisAlignment: MainAxisAlignment.center,
+            children: const [
+              Icon(Icons.account_circle, color: Constants.naranjaClaro, size: 30),
+              SizedBox(width: 8),
+              Text(
+                'Perfil',
+                style: TextStyle(
+                  color: Constants.naranjaClaro,
+                  fontSize: 22,
+                  fontWeight: FontWeight.bold,
                 ),
               ),
             ],
           ),
-        ),
+
+          const SizedBox(height: 20),
+
+          // Tarjeta centrada
+          Center(
+            child: Container(
+              width: MediaQuery.of(context).size.width * 0.9,
+              padding: const EdgeInsets.all(20),
+              decoration: BoxDecoration(
+                border: Border.all(color: Colors.black26),
+                borderRadius: BorderRadius.circular(20),
+                color: Colors.white,
+              ),
+              child: Column(
+                children: [
+                  // Imagen con cambio automático
+                  SizedBox(
+                    width: 80,
+                    height: 80,
+                    child: ClipRRect(
+                      borderRadius: BorderRadius.circular(10),
+                      child: AnimatedSwitcher(
+                        duration: const Duration(milliseconds: 500),
+                        child: Image.asset(
+                          _imagenes[_currentImageIndex],
+                          key: ValueKey<String>(_imagenes[_currentImageIndex]),
+                          fit: BoxFit.cover,
+                        ),
+                      ),
+                    ),
+                  ),
+
+                  const SizedBox(height: 20),
+                  infoRow("Nombres:", nombres),
+                  infoRow("Apellidos:", apellidos),
+                  infoRow("Correo:", email),
+                  infoRow("Teléfono:", telefono),
+                  const SizedBox(height: 25),
+                  ElevatedButton(
+                    onPressed: cerrarSesion,
+                    style: ElevatedButton.styleFrom(
+                      backgroundColor: Constants.naranjaOscuro,
+                      padding: const EdgeInsets.symmetric(horizontal: 30, vertical: 15),
+                      shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(25)),
+                      elevation: 6,
+                    ),
+                    child: const Text(
+                      "Cerrar sesión",
+                      style: TextStyle(fontSize: 16, color: Colors.white),
+                    ),
+                  ),
+                ],
+              ),
+            ),
+          ),
+        ],
       ),
     );
   }
-}
 
-class InfoTexto extends StatelessWidget {
-  final String label;
-  final String? valor;
-
-  const InfoTexto({required this.label, required this.valor});
-
-  @override
-  Widget build(BuildContext context) {
+  Widget infoRow(String label, String value) {
     return Padding(
       padding: const EdgeInsets.symmetric(vertical: 4),
       child: Row(
-        crossAxisAlignment: CrossAxisAlignment.start,
+        mainAxisAlignment: MainAxisAlignment.center,
         children: [
-          Text(
-            "$label:",
-            style: const TextStyle(fontWeight: FontWeight.bold, fontSize: 16),
-          ),
+          Text(label, style: const TextStyle(fontWeight: FontWeight.bold, fontSize: 16)),
           const SizedBox(width: 5),
-          Expanded(
-            child: Text(valor ?? "-", style: const TextStyle(fontSize: 16)),
-          ),
+          Flexible(child: Text(value, style: const TextStyle(fontSize: 16))),
         ],
       ),
     );
